@@ -50,11 +50,11 @@ class AuditReport(BaseModel):
     remediation_plan: str
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     repo_url: str
     pdf_path: str
     rubric_dimensions: List[Dict]
     evidences: Annotated[Dict[str, List[Evidence]], operator.ior]
     opinions: Annotated[List[JudicialOpinion], operator.add]
-    final_report: AuditReport
+    final_report: Optional[AuditReport]
 

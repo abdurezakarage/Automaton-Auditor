@@ -1,6 +1,6 @@
 ### Automaton Auditor (Week 2)
 
-This repository implements the **Digital Courtroom** for TRP1 Week 2: a LangGraph-based swarm that audits a target GitHub repo + PDF report and produces a structured Markdown audit.
+This repository implements the **Digital Courtroom**  A LangGraph-based swarm that audits a target GitHub repo + PDF report and produces a structured Markdown audit.
 
 #### High-level structure
 
@@ -16,3 +16,30 @@ This repository implements the **Digital Courtroom** for TRP1 Week 2: a LangGrap
 
 Implementation is guided by `Automaton_Auditor__concept_and_todo.md` in the parent folder.
 
+#### Setup (with uv)
+
+1. Install [`uv`](https://github.com/astral-sh/uv) if you don't have it.
+2. From the `automaton-auditor` folder:
+
+```bash
+uv sync
+```
+
+3. Copy `.env.example` to `.env` and fill in your API keys (LangSmith, model provider).
+
+#### Running the interim detective graph
+
+From the repo root:
+
+```bash
+uv run python run_detectives.py \
+  --repo-url https://github.com/your-user/your-week2-repo.git \
+  --pdf-path /absolute/path/to/reports/interim_report.pdf
+```
+
+This will:
+
+- Clone the target repo into a sandboxed temp directory.
+- Analyze git history and LangGraph wiring (AST-based).
+- Ingest the PDF and pull out key orchestration/metacognition passages.
+- Print a short summary of repo/doc evidences collected (to be used later by the judges).
