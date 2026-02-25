@@ -1,7 +1,8 @@
 """
-LangGraph StateGraph wiring stub.
+LangGraph StateGraph wiring.
 
-For now this just documents intended topology; nodes are not yet wired.
+Provides both interim graph (detectives only) and complete graph
+(detectives → judges → chief justice) for final submission.
 """
 
 from __future__ import annotations
@@ -12,6 +13,8 @@ from langgraph.graph import END, START, StateGraph  # type: ignore[import]
 
 from .state import AgentState
 from .nodes.detectives import run_repo_investigator, run_doc_analyst
+from .nodes.judges import run_prosecutor, run_defense, run_tech_lead
+from .nodes.justice import run_chief_justice
 
 
 def _evidence_aggregator(state: AgentState) -> dict[str, Any]:
@@ -28,13 +31,12 @@ def _evidence_aggregator(state: AgentState) -> dict[str, Any]:
 
 def build_graph() -> StateGraph:
     """
-    Placeholder factory for the main StateGraph.
+    Interim graph: Detectives only (for interim submission).
 
-    Target interim topology:
+    Topology:
     - Detectives (RepoInvestigator, DocAnalyst) fan-out in parallel.
-    - EvidenceAggregator fan-in node synchronizes before any judges exist.
+    - EvidenceAggregator fan-in node synchronizes.
     """
-
     builder = StateGraph(AgentState)
 
     # Detective nodes
@@ -57,4 +59,50 @@ def build_graph() -> StateGraph:
 
     return builder.compile()
 
+
+def build_complete_graph() -> StateGraph:
+    """
+    Complete graph: Detectives → Judges → Chief Justice (for final submission).
+
+    Topology:
+    - Detectives fan-out in parallel → EvidenceAggregator (fan-in)
+    - Judges fan-out in parallel → ChiefJustice (fan-in) → END
+    """
+    builder = StateGraph(AgentState)
+
+    # Detective layer
+    builder.add_node("repo_investigator", run_repo_investigator)
+    builder.add_node("doc_analyst", run_doc_analyst)
+    builder.add_node("evidence_aggregator", _evidence_aggregator)
+
+    # Judicial layer
+    builder.add_node("prosecutor", run_prosecutor)
+    builder.add_node("defense", run_defense)
+    builder.add_node("tech_lead", run_tech_lead)
+
+    # Supreme Court
+    builder.add_node("chief_justice", run_chief_justice)
+
+    # Detective fan-out
+    builder.add_edge(START, "repo_investigator")
+    builder.add_edge(START, "doc_analyst")
+
+    # Detective fan-in
+    builder.add_edge("repo_investigator", "evidence_aggregator")
+    builder.add_edge("doc_analyst", "evidence_aggregator")
+
+    # Judge fan-out (from evidence aggregator)
+    builder.add_edge("evidence_aggregator", "prosecutor")
+    builder.add_edge("evidence_aggregator", "defense")
+    builder.add_edge("evidence_aggregator", "tech_lead")
+
+    # Judge fan-in (to chief justice)
+    builder.add_edge("prosecutor", "chief_justice")
+    builder.add_edge("defense", "chief_justice")
+    builder.add_edge("tech_lead", "chief_justice")
+
+    # Final output
+    builder.add_edge("chief_justice", END)
+
+    return builder.compile()
 

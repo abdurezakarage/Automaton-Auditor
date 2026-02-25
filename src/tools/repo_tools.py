@@ -64,17 +64,26 @@ def _collect_stategraph_edges(repo_path: Path) -> List[Tuple[str, str]]:
             args = node.args
             if len(args) < 2:
                 continue
-            from_node = getattr(args[0], "s", None) or getattr(args[0], "value", None)
-            to_node = getattr(args[1], "s", None) or getattr(args[1], "value", None)
-            if isinstance(from_node, ast.Constant) and isinstance(from_node.value, str):
-                src_name = from_node.value
-            else:
-                continue
-            if isinstance(to_node, ast.Constant) and isinstance(to_node.value, str):
-                dst_name = to_node.value
-            else:
-                continue
-            edges.append((src_name, dst_name))
+            
+            # Extract source node name (handles both string literals and Name constants like START/END)
+            src_name = None
+            if isinstance(args[0], ast.Constant) and isinstance(args[0].value, str):
+                src_name = args[0].value
+            elif isinstance(args[0], ast.Name):
+                # Handle constants like START, END
+                src_name = args[0].id
+            
+            # Extract destination node name
+            dst_name = None
+            if isinstance(args[1], ast.Constant) and isinstance(args[1].value, str):
+                dst_name = args[1].value
+            elif isinstance(args[1], ast.Name):
+                # Handle constants like START, END
+                dst_name = args[1].id
+            
+            # Only record edges where both nodes are string identifiers (not START/END)
+            if src_name and dst_name and src_name not in ("START", "END") and dst_name not in ("START", "END"):
+                edges.append((src_name, dst_name))
     return edges
 
 

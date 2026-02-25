@@ -25,16 +25,24 @@ Implementation is guided by `Automaton_Auditor__concept_and_todo.md` in the pare
 uv sync
 ```
 
-3. Copy `.env.example` to `.env` and fill in your API keys (LangSmith, model provider).
+3. Create `.env` file from `.env.example` template:
+   ```bash
+   # .env.example is provided - copy it to .env and fill in your keys
+   cp .env.example .env
+   # Then edit .env with your actual API keys
+   ```
+   
+   Required keys:
+   - `OPENROUTER_API_KEY` or `OPENAI_API_KEY` (for LLM calls)
+   - `LANGCHAIN_API_KEY` (for LangSmith tracing)
+   - `LANGCHAIN_TRACING_V2=true` (enable observability)
 
 #### Running the interim detective graph
 
 From the repo root:
 
 ```bash
-uv run python run_detectives.py \
-  --repo-url https://github.com/your-user/your-week2-repo.git \
-  --pdf-path /absolute/path/to/reports/interim_report.pdf
+uv run python run_auditor.py --repo-url "your-repo-url" --pdf-path "pdf-file-path\report.pdf" --mode self --output-name "self_audit.md" 
 ```
 
 This will:
