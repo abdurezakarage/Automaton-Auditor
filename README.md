@@ -23,7 +23,7 @@ uv sync
    - `LANGCHAIN_API_KEY` (for LangSmith tracing)
    - `LANGCHAIN_TRACING_V2=true` (enable observability)
 
-#### Running the interim detective graph
+#### Running the detective graph
 
 From the repo root:
 

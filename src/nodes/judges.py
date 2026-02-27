@@ -18,21 +18,12 @@ from ..utils.llm_setup import get_llm
 def run_prosecutor(state: AgentState) -> Dict[str, Any]:
     """
     Prosecutor node: Critical lens - "Trust No One. Assume Vibe Coding."
-    
+
     Scrutinizes evidence for gaps, security flaws, and laziness.
-    Returns structured JudicialOpinion via .with_structured_output().
+    Returns one JudicialOpinion per rubric dimension via .with_structured_output().
     """
     evidences = state.get("evidences", {})  # type: ignore[assignment]
     rubric_dimensions = state.get("rubric_dimensions", [])  # type: ignore[assignment]
-
-    # Pick the first rubric dimension as an example target for this judge
-    if rubric_dimensions:
-        dimension = rubric_dimensions[0]
-        criterion_id = dimension.get("dimension_id", "overall")
-        criterion_name = dimension.get("dimension_name", criterion_id)
-    else:
-        criterion_id = "overall"
-        criterion_name = "Overall Quality"
 
     try:
         llm = get_llm()
@@ -64,41 +55,60 @@ def run_prosecutor(state: AgentState) -> Dict[str, Any]:
         ]
     )
 
-    messages = prompt.format_messages(
-        criterion_id=criterion_id,
-        criterion_name=criterion_name,
-        evidences=str(evidences),
-    )
+    opinions: List[JudicialOpinion] = []
 
-    try:
-        opinion = structured_llm.invoke(messages)
-    except Exception:
-        # If LLM call fails for any reason, skip opinions to keep pipeline running.
-        return {"opinions": []}
+    if rubric_dimensions:
+        for dimension in rubric_dimensions:
+            criterion_id = dimension.get("dimension_id", "overall")
+            criterion_name = dimension.get("dimension_name", criterion_id)
 
-    opinion.judge = "Prosecutor"
-    opinion.criterion_id = criterion_id
+            messages = prompt.format_messages(
+                criterion_id=criterion_id,
+                criterion_name=criterion_name,
+                evidences=str(evidences),
+            )
 
-    return {"opinions": [opinion]}
+            try:
+                opinion = structured_llm.invoke(messages)
+            except Exception:
+                # If LLM call fails for this criterion, skip it but continue others.
+                continue
+
+            opinion.judge = "Prosecutor"
+            opinion.criterion_id = criterion_id
+            opinions.append(opinion)
+    else:
+        # Fallback: single overall opinion if no rubric dimensions were provided.
+        criterion_id = "overall"
+        criterion_name = "Overall Quality"
+
+        messages = prompt.format_messages(
+            criterion_id=criterion_id,
+            criterion_name=criterion_name,
+            evidences=str(evidences),
+        )
+
+        try:
+            opinion = structured_llm.invoke(messages)
+        except Exception:
+            return {"opinions": []}
+
+        opinion.judge = "Prosecutor"
+        opinion.criterion_id = criterion_id
+        opinions.append(opinion)
+
+    return {"opinions": opinions}
 
 
 def run_defense(state: AgentState) -> Dict[str, Any]:
     """
     Defense Attorney node: Optimistic lens - "Reward Effort and Intent."
-    
+
     Highlights creative workarounds, deep thought, and effort even if
-    implementation is imperfect. Returns structured JudicialOpinion.
+    implementation is imperfect. Returns one JudicialOpinion per rubric dimension.
     """
     evidences = state.get("evidences", {})  # type: ignore[assignment]
     rubric_dimensions = state.get("rubric_dimensions", [])  # type: ignore[assignment]
-
-    if rubric_dimensions:
-        dimension = rubric_dimensions[0]
-        criterion_id = dimension.get("dimension_id", "overall")
-        criterion_name = dimension.get("dimension_name", criterion_id)
-    else:
-        criterion_id = "overall"
-        criterion_name = "Overall Quality"
 
     try:
         llm = get_llm()
@@ -129,40 +139,58 @@ def run_defense(state: AgentState) -> Dict[str, Any]:
         ]
     )
 
-    messages = prompt.format_messages(
-        criterion_id=criterion_id,
-        criterion_name=criterion_name,
-        evidences=str(evidences),
-    )
+    opinions: List[JudicialOpinion] = []
 
-    try:
-        opinion = structured_llm.invoke(messages)
-    except Exception:
-        return {"opinions": []}
+    if rubric_dimensions:
+        for dimension in rubric_dimensions:
+            criterion_id = dimension.get("dimension_id", "overall")
+            criterion_name = dimension.get("dimension_name", criterion_id)
 
-    opinion.judge = "Defense"
-    opinion.criterion_id = criterion_id
+            messages = prompt.format_messages(
+                criterion_id=criterion_id,
+                criterion_name=criterion_name,
+                evidences=str(evidences),
+            )
 
-    return {"opinions": [opinion]}
+            try:
+                opinion = structured_llm.invoke(messages)
+            except Exception:
+                continue
+
+            opinion.judge = "Defense"
+            opinion.criterion_id = criterion_id
+            opinions.append(opinion)
+    else:
+        criterion_id = "overall"
+        criterion_name = "Overall Quality"
+
+        messages = prompt.format_messages(
+            criterion_id=criterion_id,
+            criterion_name=criterion_name,
+            evidences=str(evidences),
+        )
+
+        try:
+            opinion = structured_llm.invoke(messages)
+        except Exception:
+            return {"opinions": []}
+
+        opinion.judge = "Defense"
+        opinion.criterion_id = criterion_id
+        opinions.append(opinion)
+
+    return {"opinions": opinions}
 
 
 def run_tech_lead(state: AgentState) -> Dict[str, Any]:
     """
     Tech Lead node: Pragmatic lens - "Does it actually work? Is it maintainable?"
-    
+
     Evaluates architectural soundness, code cleanliness, and practical viability.
-    Acts as tie-breaker. Returns structured JudicialOpinion.
+    Acts as tie-breaker. Returns one JudicialOpinion per rubric dimension.
     """
     evidences = state.get("evidences", {})  # type: ignore[assignment]
     rubric_dimensions = state.get("rubric_dimensions", [])  # type: ignore[assignment]
-
-    if rubric_dimensions:
-        dimension = rubric_dimensions[0]
-        criterion_id = dimension.get("dimension_id", "overall")
-        criterion_name = dimension.get("dimension_name", criterion_id)
-    else:
-        criterion_id = "overall"
-        criterion_name = "Overall Quality"
 
     try:
         llm = get_llm()
@@ -193,20 +221,46 @@ def run_tech_lead(state: AgentState) -> Dict[str, Any]:
         ]
     )
 
-    messages = prompt.format_messages(
-        criterion_id=criterion_id,
-        criterion_name=criterion_name,
-        evidences=str(evidences),
-    )
+    opinions: List[JudicialOpinion] = []
 
-    try:
-        opinion = structured_llm.invoke(messages)
-    except Exception:
-        return {"opinions": []}
+    if rubric_dimensions:
+        for dimension in rubric_dimensions:
+            criterion_id = dimension.get("dimension_id", "overall")
+            criterion_name = dimension.get("dimension_name", criterion_id)
 
-    opinion.judge = "TechLead"
-    opinion.criterion_id = criterion_id
+            messages = prompt.format_messages(
+                criterion_id=criterion_id,
+                criterion_name=criterion_name,
+                evidences=str(evidences),
+            )
 
-    return {"opinions": [opinion]}
+            try:
+                opinion = structured_llm.invoke(messages)
+            except Exception:
+                continue
+
+            opinion.judge = "TechLead"
+            opinion.criterion_id = criterion_id
+            opinions.append(opinion)
+    else:
+        criterion_id = "overall"
+        criterion_name = "Overall Quality"
+
+        messages = prompt.format_messages(
+            criterion_id=criterion_id,
+            criterion_name=criterion_name,
+            evidences=str(evidences),
+        )
+
+        try:
+            opinion = structured_llm.invoke(messages)
+        except Exception:
+            return {"opinions": []}
+
+        opinion.judge = "TechLead"
+        opinion.criterion_id = criterion_id
+        opinions.append(opinion)
+
+    return {"opinions": opinions}
 
 
