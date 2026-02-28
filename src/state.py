@@ -19,6 +19,10 @@ class Evidence(BaseModel):
         )
     )
     confidence: float
+    correlates_with: Optional[List[str]] = Field(
+        default=None,
+        description="Keys of other evidence buckets (e.g. repo, doc, vision) this evidence correlates with",
+    )
 
 
 class JudicialOpinion(BaseModel):
@@ -40,6 +44,15 @@ class CriterionResult(BaseModel):
     remediation: str = Field(
         description="Specific file-level instructions for improvement",
     )
+    # Explicit conflict resolution: variance and which named rule was applied
+    score_variance: Optional[int] = Field(
+        default=None,
+        description="Max minus min judge score; triggers dissent when >= 2",
+    )
+    resolution_rule: Optional[str] = Field(
+        default=None,
+        description="Named rule applied: security_override, fact_over_claims, tech_lead_weighting, majority, average",
+    )
 
 
 class AuditReport(BaseModel):
@@ -57,4 +70,6 @@ class AgentState(TypedDict, total=False):
     evidences: Annotated[Dict[str, List[Evidence]], operator.ior]
     opinions: Annotated[List[JudicialOpinion], operator.add]
     final_report: Optional[AuditReport]
+    # Failure tracking: node_id -> error message; merged so parallel branches can each set errors
+    errors: Annotated[Dict[str, str], operator.ior]
 

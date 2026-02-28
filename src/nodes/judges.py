@@ -27,9 +27,8 @@ def run_prosecutor(state: AgentState) -> Dict[str, Any]:
 
     try:
         llm = get_llm()
-    except RuntimeError:
-        # No LLM configured; return no opinions to keep pipeline running
-        return {"opinions": []}
+    except RuntimeError as e:
+        return {"opinions": [], "errors": {"prosecutor": f"LLM not configured: {e!s}"}}
 
     structured_llm = llm.with_structured_output(JudicialOpinion)
 
@@ -70,8 +69,8 @@ def run_prosecutor(state: AgentState) -> Dict[str, Any]:
 
             try:
                 opinion = structured_llm.invoke(messages)
-            except Exception:
-                # If LLM call fails for this criterion, skip it but continue others.
+            except Exception as e:
+                # Record failure and continue; conditional edge will route to judge_fallback if no opinions
                 continue
 
             opinion.judge = "Prosecutor"
@@ -90,13 +89,15 @@ def run_prosecutor(state: AgentState) -> Dict[str, Any]:
 
         try:
             opinion = structured_llm.invoke(messages)
-        except Exception:
-            return {"opinions": []}
+        except Exception as e:
+            return {"opinions": [], "errors": {"prosecutor": f"LLM invoke failed: {e!s}"}}
 
         opinion.judge = "Prosecutor"
         opinion.criterion_id = criterion_id
-        opinions.append(opinion)
+            opinions.append(opinion)
 
+    if not opinions:
+        return {"opinions": [], "errors": {"prosecutor": "no opinions produced (LLM skip or failure)"}}
     return {"opinions": opinions}
 
 
@@ -112,8 +113,8 @@ def run_defense(state: AgentState) -> Dict[str, Any]:
 
     try:
         llm = get_llm()
-    except RuntimeError:
-        return {"opinions": []}
+    except RuntimeError as e:
+        return {"opinions": [], "errors": {"defense": f"LLM not configured: {e!s}"}}
 
     structured_llm = llm.with_structured_output(JudicialOpinion)
 
@@ -172,13 +173,15 @@ def run_defense(state: AgentState) -> Dict[str, Any]:
 
         try:
             opinion = structured_llm.invoke(messages)
-        except Exception:
-            return {"opinions": []}
+        except Exception as e:
+            return {"opinions": [], "errors": {"defense": f"LLM invoke failed: {e!s}"}}
 
         opinion.judge = "Defense"
         opinion.criterion_id = criterion_id
         opinions.append(opinion)
 
+    if not opinions:
+        return {"opinions": [], "errors": {"defense": "no opinions produced (LLM skip or failure)"}}
     return {"opinions": opinions}
 
 
@@ -194,8 +197,8 @@ def run_tech_lead(state: AgentState) -> Dict[str, Any]:
 
     try:
         llm = get_llm()
-    except RuntimeError:
-        return {"opinions": []}
+    except RuntimeError as e:
+        return {"opinions": [], "errors": {"tech_lead": f"LLM not configured: {e!s}"}}
 
     structured_llm = llm.with_structured_output(JudicialOpinion)
 
@@ -254,13 +257,15 @@ def run_tech_lead(state: AgentState) -> Dict[str, Any]:
 
         try:
             opinion = structured_llm.invoke(messages)
-        except Exception:
-            return {"opinions": []}
+        except Exception as e:
+            return {"opinions": [], "errors": {"tech_lead": f"LLM invoke failed: {e!s}"}}
 
         opinion.judge = "TechLead"
         opinion.criterion_id = criterion_id
         opinions.append(opinion)
 
+    if not opinions:
+        return {"opinions": [], "errors": {"tech_lead": "no opinions produced (LLM skip or failure)"}}
     return {"opinions": opinions}
 
 

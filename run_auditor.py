@@ -82,6 +82,7 @@ def main() -> None:
         "rubric_dimensions": rubric_dimensions,
         "evidences": {},
         "opinions": [],
+        "errors": {},
     }
 
     final_state: AgentState = graph.invoke(initial_state)  # type: ignore[assignment]
