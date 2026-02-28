@@ -1,0 +1,111 @@
+{
+  "rubric_version": "Automaton_auditor",
+  "dimensions": [
+    {
+      "dimension_id": "langgraph_architecture",
+      "dimension_name": "LangGraph Architecture",
+      "description": "Proper StateGraph wiring with parallel fan-out/fan-in detected via AST",
+      "evidence_collection": {
+        "repo_investigator": {
+          "goal": "graph_orchestration",
+          "instructions": "Verify StateGraph builder instantiation and add_edge() calls showing parallel execution"
+        }
+      },
+      "scoring_criteria": {
+        "5": "Clear parallel fan-out/fan-in detected, proper StateGraph structure",
+        "3": "StateGraph exists but linear flow, or partial parallelism",
+        "1": "No StateGraph detected, or purely linear pipeline"
+      }
+    },
+    {
+      "dimension_id": "state_management",
+      "dimension_name": "State Management Rigor",
+      "description": "Pydantic/TypedDict state definitions with proper reducers",
+      "evidence_collection": {
+        "repo_investigator": {
+          "goal": "state_structure",
+          "instructions": "Verify src/state.py contains BaseModel/TypedDict with operator.add/operator.ior reducers"
+        }
+      },
+      "scoring_criteria": {
+        "5": "Proper Pydantic models with Annotated reducers",
+        "3": "Pydantic exists but using dicts for complex state",
+        "1": "No typed state, pure dicts"
+      }
+    },
+    {
+      "dimension_id": "judicial_nuance",
+      "dimension_name": "Judicial Nuance",
+      "description": "Three distinct judge personas with structured outputs",
+      "evidence_collection": {
+        "repo_investigator": {
+          "goal": "structured_output",
+          "instructions": "Verify src/nodes/judges.py uses .with_structured_output() or .bind_tools() bound to JudicialOpinion"
+        }
+      },
+      "scoring_criteria": {
+        "5": "All three judges use structured outputs, distinct personas",
+        "3": "Structured outputs exist but personas not distinct",
+        "1": "Freeform text outputs, no structured enforcement"
+      }
+    },
+    {
+      "dimension_id": "forensic_accuracy",
+      "dimension_name": "Forensic Accuracy",
+      "description": "Detectives collect objective evidence, cross-reference PDF claims with repo",
+      "evidence_collection": {
+        "repo_investigator": {
+          "goal": "git_history",
+          "instructions": "Extract git log to verify atomic commits vs monolithic"
+        },
+        "doc_analyst": {
+          "goal": "pdf_concepts",
+          "instructions": "Extract key orchestration concepts and cross-reference with repo evidence"
+        }
+      },
+      "scoring_criteria": {
+        "5": "Comprehensive evidence collection, proper cross-referencing",
+        "3": "Basic evidence collection, some gaps",
+        "1": "Minimal evidence, no cross-referencing"
+      }
+    },
+    {
+      "dimension_id": "safe_tooling",
+      "dimension_name": "Safe Tool Engineering",
+      "description": "Sandboxed git cloning, no unsafe system calls",
+      "evidence_collection": {
+        "repo_investigator": {
+          "goal": "sandboxing",
+          "instructions": "Verify src/tools/repo_tools.py uses tempfile for isolation"
+        }
+      },
+      "scoring_criteria": {
+        "5": "Proper sandboxing, error handling, no os.system()",
+        "3": "Sandboxing exists but incomplete",
+        "1": "No sandboxing, unsafe operations"
+      }
+    }
+  ],
+  "evidence_collection_protocols": {
+    "repo_investigator": {
+      "git_history": {
+        "command": "git log --oneline --reverse",
+        "success_pattern": ">3 commits showing progression",
+        "failure_pattern": "Single 'init' commit or bulk upload"
+      },
+      "state_structure": {
+        "file_check": "src/state.py or src/graph.py",
+        "content_scan": "AST: Look for BaseModel/TypedDict classes"
+      },
+      "graph_orchestration": {
+        "ast_analysis": "Find builder.add_edge() calls, detect fan-out/fan-in"
+      }
+    },
+    "doc_analyst": {
+      "pdf_concepts": {
+        "keywords": ["Dialectical Synthesis", "Fan-In / Fan-Out", "Metacognition", "State Synchronization"],
+        "cross_reference": "Verify file paths mentioned in PDF actually exist in repo"
+      }
+    }
+  }
+}

@@ -1,9 +1,3 @@
-"""
-LangGraph StateGraph wiring.
-
-Provides both interim graph (detectives only) and complete graph
-(detectives → judges → chief justice) for final submission.
-"""
 
 from __future__ import annotations
 
